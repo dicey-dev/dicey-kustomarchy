@@ -78,6 +78,9 @@ Item {
   property color barForeground: useTransparentForeground ? transparentForeground : themeForeground
   property bool foregroundAnimationEnabled: true
   property color background: Color.bar.background
+  // Apply translucency to island paint only. Rectangle.opacity would also
+  // fade its child widgets, making bar text and icons hard to read.
+  property color islandBackground: Qt.rgba(background.r, background.g, background.b, 0.95)
   property color urgent: Color.bar.active
   property string monitorSignature: ""
 
@@ -1177,7 +1180,7 @@ Item {
           width: leftModules.width + Style.space(20)
           height: parent.height - Style.space(2)
           radius: Style.space(6)
-          color: root.transparent ? "transparent" : root.background
+          color: root.islandBackground
           anchors.left: parent.left
           anchors.leftMargin: Style.space(10)
           anchors.verticalCenter: parent.verticalCenter
@@ -1194,7 +1197,7 @@ Item {
           width: centerModules.width + Style.space(20)
           height: parent.height - Style.space(2)
           radius: Style.space(6)
-          color: root.transparent ? "transparent" : root.background
+          color: root.islandBackground
           anchors.centerIn: parent
 
           IslandCenterModules {
@@ -1209,7 +1212,7 @@ Item {
           width: rightModules.width + Style.space(20)
           height: parent.height - Style.space(2)
           radius: Style.space(6)
-          color: root.transparent ? "transparent" : root.background
+          color: root.islandBackground
           anchors.right: parent.right
           anchors.rightMargin: Style.space(10)
           anchors.verticalCenter: parent.verticalCenter
