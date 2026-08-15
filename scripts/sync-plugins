@@ -1,0 +1,62 @@
+#!/usr/bin/env bash
+# Synchronize tracked Omarchy plugins from this checkout to the current user's
+# live plugin directory. This script is safe to invoke by hand or by systemd.
+#
+# The project directory is calculated from this script's own location, rather
+# than from the caller's working directory. That means a clone at any path is
+# supported. The current user's home directory is obtained from `id`, not a
+# hard-coded username.
+#
+# Omarchy does not permit symlinked plugin directories, so this deliberately
+# validates a temporary copy before replacing a live plugin with a real folder.
+
+set -euo pipefail
+
+project_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)
+source_root="$project_root/plugins"
+current_user=$(id -un)
+current_home=$(getent passwd "$current_user" | awk -F: '{print $6}')
+live_root="$current_home/.config/omarchy/plugins"
+
+[[ -d $source_root ]] || {
+  echo "No tracked plugins found at $source_root" >&2
+  exit 0
+}
+
+mkdir -p "$live_root"
+changed=0
+
+while IFS= read -r -d '' source_dir; do
+  plugin_id=$(basename "$source_dir")
+  live_dir="$live_root/$plugin_id"
+
+  # Avoid overwriting a live plugin when its tracked source is unchanged.
+  if [[ -d $live_dir ]] && diff -qr --exclude=.git "$source_dir" "$live_dir" >/dev/null; then
+    continue
+  fi
+
+  stage_root=$(mktemp -d "$live_root/.${plugin_id}.sync.XXXXXX")
+  stage_dir="$stage_root/$plugin_id"
+  cleanup_stage() { rm -rf "$stage_root"; }
+  trap cleanup_stage EXIT
+
+  cp -a "$source_dir" "$stage_dir"
+  omarchy plugin validate "$stage_dir"
+
+  if [[ -e $live_dir || -L $live_dir ]]; then
+    stamp=$(date +%Y%m%d%H%M%S)
+    backup_dir="${live_dir}.backup-${stamp}"
+    mv "$live_dir" "$backup_dir"
+    echo "Backed up $plugin_id to $backup_dir"
+  fi
+
+  mv "$stage_dir" "$live_dir"
+  rmdir "$stage_root"
+  trap - EXIT
+  changed=1
+  echo "Synced $plugin_id for $current_user"
+done < <(find "$source_root" -mindepth 1 -maxdepth 1 -type d -print0)
+
+if (( changed )); then
+  omarchy-shell shell rescanPlugins
+fi

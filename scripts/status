@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+echo 'Managed source:'
+find "$(cd "$(dirname "${BASH_SOURCE[0]}")/../plugins" && pwd)" -mindepth 1 -maxdepth 1 -type d -printf '  %f\n'
+echo
+echo 'Live Omarchy plugins:'
+omarchy plugin list | grep -E 'dicey\.|omarchy\.bar|omarchy\.lock' || true
