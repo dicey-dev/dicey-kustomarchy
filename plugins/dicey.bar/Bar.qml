@@ -621,7 +621,14 @@ Item {
     // Collapse only. Opening the peek is the center section's own gesture, done
     // in setCenterSectionHovered, so a timer left pending by a pointer that dipped
     // off the bar and came back cannot reveal indicators it never pointed at.
-    onTriggered: if (!root.centerSectionHovered && !root.barHovered) root.centerSectionRevealHeld = false
+    // A popout belongs to one of the revealed modules. Keep that module mounted
+    // while its panel is open; otherwise leaving the bar destroys its owner and
+    // immediately closes the panel.
+    onTriggered: if (!root.centerSectionHovered && !root.barHovered && !root.activePopout) root.centerSectionRevealHeld = false
+  }
+
+  onActivePopoutChanged: {
+    if (!activePopout && !centerSectionHovered && !barHovered) centerSectionRevealTimer.restart()
   }
 
   function run(command) {
@@ -1500,7 +1507,11 @@ Item {
     property var entries: root.layoutEntries("center")
     readonly property bool hasAnchor: root.entryIndex(entries, root.centerAnchor) !== -1
     readonly property var anchorEntry: root.findCenterAnchorEntry()
-    readonly property real flankWidth: Math.max(beforeAnchor.width, afterAnchor.width)
+    // At rest the island hugs the center anchor. Once the anchor is hovered,
+    // reveal equal room on both sides so it can grow around the flanking
+    // modules without moving the clock off the physical display center.
+    readonly property bool flanksRevealed: root.centerSectionRevealHeld
+    readonly property real flankWidth: flanksRevealed ? Math.max(beforeAnchor.width, afterAnchor.width) : 0
 
     implicitWidth: hasAnchor
       ? flankWidth * 2 + centerAnchorModule.width
@@ -1530,7 +1541,8 @@ Item {
 
     ModuleList {
       id: beforeAnchor
-      visible: islandCenterRoot.hasAnchor
+      visible: islandCenterRoot.hasAnchor && islandCenterRoot.flanksRevealed
+      keepLoaded: islandCenterRoot.hasAnchor
       entries: root.entriesBefore(islandCenterRoot.entries, root.centerAnchor)
       region: "center"
       anchors.right: centerAnchorModule.left
@@ -1548,7 +1560,10 @@ Item {
 
     ModuleList {
       id: afterAnchor
-      visible: islandCenterRoot.hasAnchor
+      visible: islandCenterRoot.hasAnchor && islandCenterRoot.flanksRevealed
+      // Load providers such as Weather before hover so their first icon paint
+      // is immediate, while the hidden Loader keeps the resting island compact.
+      keepLoaded: islandCenterRoot.hasAnchor
       entries: root.entriesAfter(islandCenterRoot.entries, root.centerAnchor)
       region: "center"
       anchors.left: centerAnchorModule.right
@@ -1640,14 +1655,14 @@ Item {
 
     property var entries: []
     property string region: ""
+    property bool keepLoaded: false
 
     visible: entries.length > 0
-    // A hidden list must not build its modules. The center section declares
-    // both an anchored and an unanchored arrangement and shows whichever
-    // fits, so leaving the other one loaded mounts every center module
-    // twice — two IPC handlers registered for the same target, two clocks
-    // ticking, two of every timer and fetch behind them.
-    active: visible && entries.length > 0
+    // Most hidden lists must not build their modules: the center section
+    // declares both anchored and unanchored arrangements, so loading both
+    // would mount every module twice. The compact island flanks opt in to
+    // keepLoaded so provider-backed icons are ready when hover reveals them.
+    active: (visible || keepLoaded) && entries.length > 0
     sourceComponent: root.vertical ? verticalModuleList : horizontalModuleList
     width: item ? item.implicitWidth : 0
     height: item ? item.implicitHeight : 0
