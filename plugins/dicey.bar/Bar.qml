@@ -82,7 +82,6 @@ Item {
   // fade its child widgets, making bar text and icons hard to read.
   property color islandBackground: Qt.rgba(background.r, background.g, background.b, 0.95)
   property color urgent: Color.bar.active
-  property string monitorSignature: ""
 
   Behavior on barForeground { enabled: root.foregroundAnimationEnabled; ColorAnimation { duration: 420; easing.type: Easing.InOutCubic } }
   Behavior on background { ColorAnimation { duration: 420; easing.type: Easing.InOutCubic } }
@@ -635,51 +634,6 @@ Item {
     if (!command) return
 
     Util.execDetached(command)
-  }
-
-  // Hyprland's scale command can replace a layer surface without producing a
-  // dependable QScreen scale signal. Poll the compositor's monitor signature
-  // and restart the shell once after a real layout/scale transition.
-  function observeMonitorSignature(signature) {
-    var next = String(signature || "").trim()
-    if (!next) return
-    if (!monitorSignature) {
-      monitorSignature = next
-      return
-    }
-    if (next === monitorSignature) return
-    monitorSignature = next
-    monitorChangeRestartTimer.restart()
-  }
-
-  Timer {
-    id: monitorSignatureTimer
-    interval: 1500
-    running: true
-    repeat: true
-    onTriggered: if (!monitorSignatureProbe.running) monitorSignatureProbe.running = true
-  }
-
-  Process {
-    id: monitorSignatureProbe
-    command: ["bash", "-c", "hyprctl monitors -j | jq -c '[.[] | {name, scale, width, height, x, y}]'"]
-    stdout: SplitParser { onRead: function(line) { root.observeMonitorSignature(line) } }
-  }
-
-  Timer {
-    id: monitorChangeRestartTimer
-    interval: 1000
-    onTriggered: root.run("omarchy restart shell")
-  }
-
-  // `omarchy-hyprland-monitor-scaling` appends this file immediately after it
-  // applies a real scale. It is the authoritative signal for keyboard and
-  // monitor-panel scale changes, including transitions QScreen reports late.
-  FileView {
-    path: root.stateHome + "/omarchy/monitor-scaling.log"
-    watchChanges: true
-    printErrors: false
-    onFileChanged: monitorChangeRestartTimer.restart()
   }
 
   function toggleTransparency() {

@@ -14,7 +14,8 @@ change made on top of packaged Omarchy. It never edits `/usr/share/omarchy`.
 
 The bar retains Quattro's widgets, PAM/session locking, and theme integration.
 It adds three floating islands, a five-pixel top margin, gentler corners, and
-automatic shell recovery after Omarchy monitor-scale changes.
+bar surface remapping after monitor layout or scale changes. Monitor changes
+keep the shell running so Screens' Keep/Revert confirmation stays available.
 
 ## Layout
 
