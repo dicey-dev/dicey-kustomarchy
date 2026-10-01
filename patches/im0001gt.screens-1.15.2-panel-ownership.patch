@@ -1,0 +1,93 @@
+--- a/Screens.qml
++++ b/Screens.qml
+@@ -508,17 +508,24 @@
+   }
+ 
+   function isPanelOwner() {
++    var name = root.barScreenName
++    // A layer surface temporarily loses its screen while it remaps.
++    if (!name) return false
+     var owner = ""
+     if (root.careService && root.careService.panelScreen)
+       owner = String(root.careService.panelScreen)
+     if (!owner) owner = root.panelOwnerScreen
+-    if (!owner || owner === root.barScreenName) return true
+     var screens = Quickshell.screens
+-    var i
++    var names = []
++    var i, candidate
+     for (i = 0; i < (screens ? screens.length : 0); i++) {
+-      if (String(screens[i].name) === owner) return false
+-    }
+-    return true
++      candidate = String(screens[i].name || "")
++      if (candidate === owner) return name === owner
++      if (candidate) names.push(candidate)
++    }
++    // If the owner was unplugged, every widget must elect the same survivor.
++    names.sort()
++    return names.length > 0 && name === names[0]
+   }
+ 
+   function open() {
+@@ -533,6 +540,11 @@
+   }
+ 
+   function close() {
++    // A secondary panel must never cancel the owner's pending preview.
++    if (!root.isPanelOwner()) {
++      root.controller.hide()
++      return
++    }
+     // Scale/layout apply remaps layer surfaces. KeyboardPanel's other-output
+     // dismiss overlay then sees a synthetic press and would wipe Keep/Revert.
+     if (root.shouldHoldPanel()) {
+@@ -547,6 +559,10 @@
+       root.careService.panelMapped = false
+       root.careService.panelScreen = ""
+     }
++    // Roll back explicitly before clearing shared pending state instead of
++    // relying on window teardown to reach onOpenedChanged's rollback path.
++    if (root.pendingConfirm) root.revertLayout()
++    else if (root.layoutDirty) root.undoDraft()
+     root.writePanelState(false, false, 0)
+     root.controller.hide()
+   }
+@@ -608,11 +624,8 @@
+       if (!root.opened) root.controller.show()
+       return
+     }
+-    var ownerMapped = root.careService && root.careService.panelMapped
+-    if (root.resumeTries >= 2 && !ownerMapped) {
+-      if (!root.opened) root.controller.show()
+-      return
+-    }
++    // Replacement bars cannot access Screens' service. A missing service
++    // does not mean the owner is absent; isPanelOwner checks the screen list.
+     if (root.opened) root.controller.hide()
+   }
+ 
+@@ -636,6 +649,7 @@
+   }
+ 
+   function keepLayout() {
++    if (!root.isPanelOwner()) return
+     revertTick.stop()
+     root.pendingConfirm = false
+     root.layoutDirty = false
+@@ -647,6 +661,7 @@
+ 
+   function revertLayout() {
+     revertTick.stop()
++    if (!root.isPanelOwner()) return
+     root.pendingConfirm = false
+     root.layoutDirty = false
+     if (root.liveMonitors && root.liveMonitors.length)
+@@ -1207,6 +1222,7 @@
+     if (win && win.contentItem) win.contentItem.opacity = 1
+   }
+   onOpenedChanged: {
++    if (!root.isPanelOwner()) return
+     if (opened) {
+       root.stickyPanel = true
+       if (root.careService) {

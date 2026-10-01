@@ -16,8 +16,8 @@ the live plugin safely.
   changes continue to apply.
 - The bar has a 5px top offset and 6px island corners.
 - `ScaleSafeRemap.qml` remaps layer surfaces after monitor geometry changes.
-- The bar observes Omarchy's monitor-scaling log and restarts the shell once
-  after a scale transition, preventing a permanently invisible bar.
+- Widget loaders preserve their instances while monitor changes remap the
+  bar surface; monitor changes do not restart the shell.
 
 ## Activation
 
