@@ -1132,12 +1132,15 @@ Item {
       Item {
         anchors.fill: parent
 
+        // Use configured entries for island visibility. A child's effective
+        // visible becomes false when this window unmaps; binding its parent
+        // back to that value latches the whole island off after remapping.
         // Keep the three Waybar-era groups visually distinct while retaining
         // the Quickshell widgets and their popouts. The padding, radius, and
         // edge offsets intentionally match the saved island-style Waybar CSS.
         Rectangle {
           id: leftIsland
-          visible: leftModules.visible
+          visible: leftModules.entries.length > 0
           width: leftModules.width + Style.space(20)
           height: parent.height - Style.space(2)
           radius: Style.space(6)
@@ -1154,7 +1157,7 @@ Item {
 
         Rectangle {
           id: centerIsland
-          visible: centerModules.visible
+          visible: centerModules.entries.length > 0
           width: centerModules.width + Style.space(20)
           height: parent.height - Style.space(2)
           radius: Style.space(6)
@@ -1169,7 +1172,7 @@ Item {
 
         Rectangle {
           id: rightIsland
-          visible: rightModules.visible
+          visible: rightModules.entries.length > 0
           width: rightModules.width + Style.space(20)
           height: parent.height - Style.space(2)
           radius: Style.space(6)

@@ -18,6 +18,8 @@ the live plugin safely.
 - `ScaleSafeRemap.qml` remaps layer surfaces after monitor geometry changes.
 - Widget loaders preserve their instances while monitor changes remap the
   bar surface; monitor changes do not restart the shell.
+- Island visibility follows configured entries, not child effective visibility,
+  so remapping cannot latch all three islands permanently hidden.
 
 ## Activation
 
