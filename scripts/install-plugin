@@ -5,13 +5,17 @@ plugin_id=${1:?usage: scripts/install-plugin <plugin-id>}
 project_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 source_dir="$project_root/plugins/$plugin_id"
 target_dir="$HOME/.config/omarchy/plugins/$plugin_id"
+backup_root="$HOME/.local/state/dicey-kustomarchy/plugin-backups"
 
 [[ -d $source_dir ]] || { echo "Unknown tracked plugin: $plugin_id" >&2; exit 2; }
 mkdir -p "$HOME/.config/omarchy/plugins"
 
 if [[ -e $target_dir || -L $target_dir ]]; then
   stamp=$(date +%Y%m%d%H%M%S)
-  backup_dir="${target_dir}.backup-${stamp}"
+  # Keep duplicate manifest ids outside Omarchy's plugin scan directory.
+  mkdir -p "$backup_root"
+  backup_dir=$(mktemp -d "$backup_root/${plugin_id}.backup-${stamp}.XXXXXX")
+  rmdir "$backup_dir"
   mv "$target_dir" "$backup_dir"
   echo "Backed up existing plugin to $backup_dir"
 fi

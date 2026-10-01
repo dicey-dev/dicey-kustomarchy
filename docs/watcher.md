@@ -33,6 +33,8 @@ logins, use `enable`; to remove that startup behavior, use `disable`.
 - It only copies project → live configuration. Make changes under `plugins/`;
   direct live edits will be replaced the next time that plugin is synchronized.
 - Before a changed plugin replaces its live copy, a staged copy is validated.
-  Existing live copies are timestamped backups.
+  Existing live copies are timestamped backups under
+  `~/.local/state/dicey-kustomarchy/plugin-backups/`, outside Omarchy's plugin
+  scan directory so duplicate manifest ids cannot shadow the live version.
 - The watcher asks Omarchy to rescan only after a successful change. It does
   not restart the shell unless your plugin itself requires that separately.

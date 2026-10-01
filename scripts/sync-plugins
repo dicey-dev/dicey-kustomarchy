@@ -17,6 +17,9 @@ source_root="$project_root/plugins"
 current_user=$(id -un)
 current_home=$(getent passwd "$current_user" | awk -F: '{print $6}')
 live_root="$current_home/.config/omarchy/plugins"
+# Omarchy scans every non-hidden folder under live_root. A backup there keeps
+# its manifest id and can shadow the installed plugin during the next scan.
+backup_root="$current_home/.local/state/dicey-kustomarchy/plugin-backups"
 
 [[ -d $source_root ]] || {
   echo "No tracked plugins found at $source_root" >&2
@@ -45,7 +48,9 @@ while IFS= read -r -d '' source_dir; do
 
   if [[ -e $live_dir || -L $live_dir ]]; then
     stamp=$(date +%Y%m%d%H%M%S)
-    backup_dir="${live_dir}.backup-${stamp}"
+    mkdir -p "$backup_root"
+    backup_dir=$(mktemp -d "$backup_root/${plugin_id}.backup-${stamp}.XXXXXX")
+    rmdir "$backup_dir"
     mv "$live_dir" "$backup_dir"
     echo "Backed up $plugin_id to $backup_dir"
   fi

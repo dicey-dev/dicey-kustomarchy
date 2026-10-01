@@ -47,7 +47,9 @@ omarchy bar use dicey.bar
 ```
 
 Omarchy rejects symlinked plugin directories, so `install-plugin` copies the
-tracked source into the live location and creates a timestamped backup first.
+tracked source into the live location and creates a timestamped backup first
+under `~/.local/state/dicey-kustomarchy/plugin-backups/`. Backups stay outside
+the plugin directory so Omarchy cannot load their duplicate plugin ids.
 Restart the shell only when a live reload is insufficient:
 
 ```bash

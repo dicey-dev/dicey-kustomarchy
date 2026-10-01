@@ -1373,14 +1373,14 @@ Item {
         }
 
         ModuleList {
-          visible: !centerRoot.hasAnchor
+          layoutVisible: !centerRoot.hasAnchor
           entries: centerRoot.entries
           region: "center"
           anchors.centerIn: parent
         }
 
         ModuleList {
-          visible: centerRoot.hasAnchor
+          layoutVisible: centerRoot.hasAnchor
           entries: root.entriesBefore(centerRoot.entries, root.centerAnchor)
           region: "center"
           anchors.right: centerAnchorModule.left
@@ -1396,7 +1396,7 @@ Item {
         }
 
         ModuleList {
-          visible: centerRoot.hasAnchor
+          layoutVisible: centerRoot.hasAnchor
           entries: root.entriesAfter(centerRoot.entries, root.centerAnchor)
           region: "center"
           anchors.left: centerAnchorModule.right
@@ -1418,14 +1418,14 @@ Item {
         }
 
         ModuleList {
-          visible: !centerRoot.hasAnchor
+          layoutVisible: !centerRoot.hasAnchor
           entries: centerRoot.entries
           region: "center"
           anchors.centerIn: parent
         }
 
         ModuleList {
-          visible: centerRoot.hasAnchor
+          layoutVisible: centerRoot.hasAnchor
           entries: root.entriesBefore(centerRoot.entries, root.centerAnchor)
           region: "center"
           anchors.bottom: centerAnchorModule.top
@@ -1441,7 +1441,7 @@ Item {
         }
 
         ModuleList {
-          visible: centerRoot.hasAnchor
+          layoutVisible: centerRoot.hasAnchor
           entries: root.entriesAfter(centerRoot.entries, root.centerAnchor)
           region: "center"
           anchors.top: centerAnchorModule.bottom
@@ -1487,7 +1487,7 @@ Item {
 
     ModuleList {
       id: allCenterModules
-      visible: !islandCenterRoot.hasAnchor
+      layoutVisible: !islandCenterRoot.hasAnchor
       entries: islandCenterRoot.entries
       region: "center"
       anchors.centerIn: parent
@@ -1495,7 +1495,7 @@ Item {
 
     ModuleList {
       id: beforeAnchor
-      visible: islandCenterRoot.hasAnchor && islandCenterRoot.flanksRevealed
+      layoutVisible: islandCenterRoot.hasAnchor && islandCenterRoot.flanksRevealed
       keepLoaded: islandCenterRoot.hasAnchor
       entries: root.entriesBefore(islandCenterRoot.entries, root.centerAnchor)
       region: "center"
@@ -1514,7 +1514,7 @@ Item {
 
     ModuleList {
       id: afterAnchor
-      visible: islandCenterRoot.hasAnchor && islandCenterRoot.flanksRevealed
+      layoutVisible: islandCenterRoot.hasAnchor && islandCenterRoot.flanksRevealed
       // Load providers such as Weather before hover so their first icon paint
       // is immediate, while the hidden Loader keeps the resting island compact.
       keepLoaded: islandCenterRoot.hasAnchor
@@ -1610,13 +1610,16 @@ Item {
     property var entries: []
     property string region: ""
     property bool keepLoaded: false
+    property bool layoutVisible: true
 
-    visible: entries.length > 0
+    visible: layoutVisible && entries.length > 0
     // Most hidden lists must not build their modules: the center section
     // declares both anchored and unanchored arrangements, so loading both
     // would mount every module twice. The compact island flanks opt in to
     // keepLoaded so provider-backed icons are ready when hover reveals them.
-    active: (visible || keepLoaded) && entries.length > 0
+    // Effective visibility also changes when a monitor remaps its bar surface.
+    // Keep widget instances and their pending confirmation alive during that.
+    active: (layoutVisible || keepLoaded) && entries.length > 0
     sourceComponent: root.vertical ? verticalModuleList : horizontalModuleList
     width: item ? item.implicitWidth : 0
     height: item ? item.implicitHeight : 0
